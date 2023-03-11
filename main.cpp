@@ -50,7 +50,7 @@ float fract_f = 0.1;
 float point_simulated_radius = 0.5;
 
 int solve_iterations = 5;
-float normal_bounce_eff = -0.9;
+float normal_bounce_eff = -1;
 float tangent_bounce_eff = 0.9;
 float body_body_normal_bouncienes = 1.0;
 float body_body_tangent_bouncienes = 1.0;
@@ -66,8 +66,21 @@ void pis(string s) {
     std::cout << s << std::endl;
 }
 
+
+void load_bodys(){
+    bodys.clear();
+    Body body;
+    bodys.push_back(body);
+    bodys.push_back(body);
+    bodys.push_back(body);
+    bodys[0].load_body_file("body1.phx", 1, 1, 1, Vector2(0, 0));
+    bodys[1].load_body_file("body2.phx", 1, 1, 1, Vector2(200, 0));
+    bodys[2].load_body_file("body3.phx", 1, 1, 1, Vector2(400, 0));
+}
+
+
 void main_loop() {
-    sf::RenderWindow window(sf::VideoMode(screen_width, screen_height), "Window");
+    sf::RenderWindow window(sf::VideoMode(screen_width, screen_height), "Phx Window");
     using delta = std::chrono::duration<std::int64_t, std::ratio<1,600>>;
     auto next = std::chrono::steady_clock::now() + delta{ 1 };
     std::unique_lock<std::mutex> lk(mut);
@@ -89,6 +102,9 @@ void main_loop() {
             if (event.type == sf::Event::KeyPressed) {
                 if (event.key.code == sf::Keyboard::D) {
                     draw_springs_and_points *= -1;
+                }
+                if (event.key.code == sf::Keyboard::R) {
+                    load_bodys();
                 }
             }
 
@@ -145,52 +161,12 @@ void main_loop() {
     }
 }
 
+
+
+
 int main()
 {
-    /*
-    Body body;
-    vector<Point> ps;
-    ps.push_back(Point{ Vector2(20,10),Vector2(1,-0.1) });
-    ps.push_back(Point{ Vector2(10,10),Vector2(0.5,-0.5) });
-    ps.push_back(Point{ Vector2(10,20),Vector2(0.5,-0.5) });
-
-    body.points = ps;
-    bodys.push_back(body);
-
-    bodys[0].springs.push_back(Spring{ &bodys[0].points[0],&bodys[0].points[1],100});
-    bodys[0].springs.push_back(Spring{ &bodys[0].points[0],&bodys[0].points[2],100 });
-    bodys[0].springs.push_back(Spring{ &bodys[0].points[1],&bodys[0].points[2],100 });
-
-    bodys[0].outline_sticks.push_back(OutlineStick{ &bodys[0].points[0],&bodys[0].points[1] });
-    bodys[0].outline_sticks.push_back(OutlineStick{ &bodys[0].points[0],&bodys[0].points[2] });
-    bodys[0].outline_sticks.push_back(OutlineStick{ &bodys[0].points[1],&bodys[0].points[2] });
-    
-    Body body2;
-
-    body2.points.push_back(Point{ Vector2(320,10),Vector2(-1,-0.1) });
-    body2.points.push_back(Point{ Vector2(310,10),Vector2(-0.5,-0.5) });
-    body2.points.push_back(Point{ Vector2(310,20),Vector2(-0.5,-0.5) });
-    bodys.push_back(body2);
-
-    bodys[1].springs.push_back(Spring{ &bodys[1].points[0],&bodys[1].points[1],200 });
-    bodys[1].springs.push_back(Spring{ &bodys[1].points[0],&bodys[1].points[2],200 });
-    bodys[1].springs.push_back(Spring{ &bodys[1].points[1],&bodys[1].points[2],200 });
-
-    bodys[1].outline_sticks.push_back(OutlineStick{ &bodys[1].points[0],&bodys[1].points[1] });
-    bodys[1].outline_sticks.push_back(OutlineStick{ &bodys[1].points[0],&bodys[1].points[2] });
-    bodys[1].outline_sticks.push_back(OutlineStick{ &bodys[1].points[1],&bodys[1].points[2] });
-
-   */
-    
-    Body body3;
-    bodys.push_back(body3);
-    bodys.push_back(body3);
-    bodys.push_back(body3);
-    bodys[0].load_body_file("body1.txt", 1, 1, 1, Vector2(0, 0));
-    bodys[1].load_body_file("body2.txt", 1, 1, 1, Vector2(200, 0));
-    bodys[2].load_body_file("body3.txt", 1, 1, 1, Vector2(400, 0));
-    
-
+    load_bodys();
     using namespace std::chrono_literals;
     std::thread t{ main_loop };
     std::this_thread::sleep_for(1000000s);
