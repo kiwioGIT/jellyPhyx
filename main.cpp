@@ -18,7 +18,7 @@ float ball_size = 10;
 float speed_scale = 0.1;
 
 
-//yos
+
 
 
 vector<Body> bodys;
@@ -45,7 +45,6 @@ int screen_height = 600;
 
 
 float fract_f = 0.1;
-//float shift_v_cap = 100;
 
 float point_simulated_radius = 0.5;
 
@@ -87,9 +86,8 @@ void main_loop() {
     while (!stop)
     {
         mut.unlock();
-        // code goes here
 
-        
+
         sf::Event event;
         while (window.pollEvent(event))
         {
@@ -124,7 +122,6 @@ void main_loop() {
             bodys[0].apply_velocity(Vector2(0,-speed));
         }
 
-        //pis(to_string(distance_to_nearest_stick(test_point,bodys[0])));
 
         if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
         {
@@ -135,24 +132,12 @@ void main_loop() {
         }
 
         window.clear();
-        /*
-        if (is_point_in_body(test_point, bodys[0])) {
-            draw_circle(test_point, 3, sf::Color::Red, &window);
-        }
-        else {
-            draw_circle(test_point, 3, sf::Color::Green, &window);
-        }
-        */
         draw_sticks(&window);
         if (draw_springs_and_points == 1) {
             draw_springs(&window);
             draw_points(&window);
         }
         window.display();
-
-
-        
-
 
         // Wait for the next 1/60 sec
         mut.lock();
@@ -200,7 +185,6 @@ void draw_points(sf::RenderWindow* window) {
 void draw_springs(sf::RenderWindow* window) {
     for (int b = 0; b < bodys.size(); b++) {
         for (int s = 0; s < bodys[b].springs.size(); s++) {
-            //sf::CircleShape circle_shape(3.0);
             sf::Vertex line[] =
             {
                 sf::Vertex(sf::Vector2f(bodys[b].springs[s].point_A->pos.x, bodys[b].springs[s].point_A->pos.y)),

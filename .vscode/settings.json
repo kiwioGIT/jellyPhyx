@@ -2,6 +2,7 @@
     "C_Cpp.default.configurationProvider": "ms-vscode.makefile-tools",
     "files.associations": {
         "thread": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "exception": "cpp"
     }
 }
