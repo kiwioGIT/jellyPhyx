@@ -7,8 +7,6 @@
 #include <fstream>
 #include <strstream>
 
-
-
 class Vector2
 {
 public:
@@ -202,7 +200,6 @@ struct Body {
 
 	BB get_bb(){
 		float margin = 100.0;
-
 
 		float min_y = 999999999;
 		float max_y = -999999999;

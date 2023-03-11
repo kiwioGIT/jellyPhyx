@@ -25,7 +25,6 @@ def closest_point(x,y):
             closest_point = p
     return closest_point
 
-
 def save():
     print("Saving to file")
     f= open("body.phx","w+")

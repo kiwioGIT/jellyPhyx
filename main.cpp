@@ -17,10 +17,6 @@ float ball_size = 10;
 
 float speed_scale = 0.1;
 
-
-
-
-
 vector<Body> bodys;
 
 Vector2 gravity = Vector2(0, 0.125);
@@ -213,14 +209,11 @@ void draw_sticks(sf::RenderWindow* window) {
                 sf::Vertex(sf::Vector2f(bodys[b].outline_sticks[s].point_B->pos.x - normal.x * thickness, bodys[b].outline_sticks[s].point_B->pos.y - normal.y * thickness))
             };
             
-            window->draw(line, 4, sf::TrianglesStrip);
-            
-            
+            window->draw(line, 4, sf::TrianglesStrip);  
         }
         
     }
 }
-
 
 void update_points() {
     for (int b = 0; b < bodys.size(); b++) {
@@ -297,23 +290,15 @@ float distance_to_nearest_stick(Vector2 v, Body body) {
 void solve_bodys() {
     for (int b1 = 0; b1 < bodys.size(); b1++) {
         Body *body1 = &bodys[b1];
-        //pis("Body: " + to_string(b1));
         for (int b2 = 0; b2 < bodys.size(); b2++) {
             if (b1 == b2) { continue; }
             Body* body2 = &bodys[b2];
-            //pis("interacting with body: " + to_string(b1));
             if (!body1->get_bb().is_overlap(body2->get_bb())) { continue; }
-            //pis("bounding boxes overlap!");
             for (int p = 0; p < body1->points.size(); p++) {
-                
-
-                
-                // Point-Point solve
                 for (int p2 = 0; p2 < body2->points.size(); p2++) {
                     Vector2 dist_v = body2->points[p2].pos - body1->points[p].pos;
                     float dist_between = dist_v.length();
                     if (dist_between < 2 * point_simulated_radius) {
-                        //pis("lol");
                         Vector2 shift_vector = dist_v * 0.5 * (( 2 * point_simulated_radius - dist_between) / dist_between);
                         body1->points[p].pos = body1->points[p].pos - shift_vector;
                         body2->points[p2].pos = body2->points[p2].pos + shift_vector;
@@ -358,17 +343,10 @@ void solve_bodys() {
                     }
                 }
 
-               
-
-
-
                 // Updates positions
                 float stick_lenght = distance(closest_stick.point_A->pos,closest_stick.point_B->pos);
                 float to_point_lenght = distance(closest_stick.point_A->pos, closest_projection);
                 float t = to_point_lenght / stick_lenght;
-
-                //if (t < stick_coll_min_t) { continue; }
-                //if (t > 1.0 - stick_coll_min_t) { continue; }
 
                 Vector2 vs = closest_projection - body1->points[p].pos;
                 float vsa = (t - 1) / (2 - 2 * t + 2 * t * t);
@@ -378,16 +356,10 @@ void solve_bodys() {
                 closest_stick.point_B->pos = closest_stick.point_B->pos + vs * vsb;
                 body1->points[p].pos = body1->points[p].pos + vs * vsp;
 
-
-                
-                // Updates velocities
                 Vector2 stick_avarage_velo = (closest_stick.point_A->velo + closest_stick.point_B->velo) * 0.5;
                 
                 Vector2 normal = vs.normalized();
                 Vector2 tangent = Vector2(-normal.y, normal.x);
-
-                
-
 
                 float p_nor_dp = dot(normal, body1->points[p].velo);
                 float s_nor_dp = dot(normal, stick_avarage_velo);
@@ -402,23 +374,11 @@ void solve_bodys() {
                 float p_nor_m = (p_nor_dp * (b1mass - b2mass) + 2.0f * b2mass * s_nor_dp) / (b1mass + b2mass); //point
                 float s_nor_m = (s_nor_dp * (b2mass - b1mass) + 2.0f * b1mass * p_nor_dp) / (b1mass + b2mass); //stick
 
-                //if (abs(p_nor_m) > shift_v_cap) { continue; }
-                //if (abs(s_nor_m) > shift_v_cap) { continue; }
-                //if (abs(s_tan_dp) > shift_v_cap) { continue; }
-                //if (abs(p_tan_dp) > shift_v_cap) { continue; }
-
-
                 body1->points[p].velo = normal * p_nor_m * body_body_normal_bouncienes + tangent * p_tan_dp * body_body_tangent_bouncienes;
                 closest_stick.point_A->velo = normal * s_nor_m * body_body_normal_bouncienes + tangent * s_tan_dp * body_body_tangent_bouncienes;
                 closest_stick.point_B->velo = normal * s_nor_m * body_body_normal_bouncienes + tangent * s_tan_dp * body_body_tangent_bouncienes;
-                //Vector2 point_nor_velo = normal *                               
-                //Vector2 stick_nor_velo = normal * dot(normal, closest_stick.point_B->velo);
-
-
-
             }
         }
-        //pis(" ");
     }
 }
 
@@ -432,7 +392,6 @@ void solve_stick_collisions() {
             Vector2 shift_vector = dist_v * 0.5 * ((spring.lenght - dist_f) / dist_f);
             spring.point_A->pos = spring.point_A->pos - shift_vector;
             spring.point_B->pos = spring.point_B->pos + shift_vector;
-            
         }
     }
 }
@@ -448,7 +407,6 @@ void solve_springs() {
             Vector2 shift_vector = dist_v * 0.5 * ((spring.lenght - dist_f) / dist_f);
             spring.point_A->velo = spring.point_A->velo - (shift_vector * spring.stifness * speed_scale - s_normal * relative_velo * spring.damping * speed_scale)/spring.point_A->mass;
             spring.point_B->velo = spring.point_B->velo + (shift_vector * spring.stifness * speed_scale - s_normal * relative_velo * spring.damping * speed_scale)/spring.point_B->mass;
-
         }
     }
 }
