@@ -121,12 +121,17 @@ void main_loop() {
 
         if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
         {
+            //pis(to_string(bodys[0].points[0].velo.x) + " a " + to_string(bodys[1].points[0].velo.x));
             update_points();
+            //pis(to_string(bodys[0].points[0].velo.x) + " b " + to_string(bodys[1].points[0].velo.x));
             solve_springs();
+            //pis(to_string(bodys[0].points[0].velo.x) + " c " + to_string(bodys[1].points[0].velo.x));
             solve_ball_collisions();
+            //pis(to_string(bodys[0].points[0].velo.x) + " d " + to_string(bodys[1].points[0].velo.x));
             solve_bodys();
+            //pis(to_string(bodys[0].points[0].velo.x) + " e " + to_string(bodys[1].points[0].velo.x));
         }
-
+        
         window.clear();
         draw_sticks(&window);
         if (draw_springs_and_points == 1) {
@@ -146,7 +151,9 @@ void main_loop() {
 
 
 int main()
-{
+{//lol
+
+
     load_bodys();
     using namespace std::chrono_literals;
     std::thread t{ main_loop };
@@ -294,6 +301,7 @@ void solve_bodys() {
             if (b1 == b2) { continue; }
             Body* body2 = &bodys[b2];
             if (!body1->get_bb().is_overlap(body2->get_bb())) { continue; }
+            
             for (int p = 0; p < body1->points.size(); p++) {
                 for (int p2 = 0; p2 < body2->points.size(); p2++) {
                     Vector2 dist_v = body2->points[p2].pos - body1->points[p].pos;
@@ -322,9 +330,11 @@ void solve_bodys() {
                         body2->points[p2].velo = n * nor_m2 * body_body_normal_bouncienes + tan * tdp2 * body_body_tangent_bouncienes;
                     }
                 }
-                
+
+                //pis(to_string(bodys[0].points[0].velo.x) + " a " + to_string(bodys[1].points[0].velo.x));
 
                 if (!is_point_in_body(body1->points[p].pos, *body2)) {
+                    //pis("skipped");
                     continue;
                 }
                 
@@ -342,6 +352,7 @@ void solve_bodys() {
                         closest_projection = projection;
                     }
                 }
+                //pis(to_string(bodys[0].points[0].velo.x) + " b " + to_string(bodys[1].points[0].velo.x));
 
                 // Updates positions
                 float stick_lenght = distance(closest_stick.point_A->pos,closest_stick.point_B->pos);
@@ -349,6 +360,9 @@ void solve_bodys() {
                 float t = to_point_lenght / stick_lenght;
 
                 Vector2 vs = closest_projection - body1->points[p].pos;
+
+                if (abs(t) < 0.001 || abs(t) > 0.999){continue;}
+
                 float vsa = (t - 1) / (2 - 2 * t + 2 * t * t);
                 float vsb = vsa * (t / (1 - t));
                 float vsp =  -vsa - vsb;
@@ -358,7 +372,11 @@ void solve_bodys() {
 
                 Vector2 stick_avarage_velo = (closest_stick.point_A->velo + closest_stick.point_B->velo) * 0.5;
                 
-                Vector2 normal = vs.normalized();
+                float vs_lenght = vs.length();
+
+                if (vs_lenght < 0.0001){continue;}
+
+                Vector2 normal = vs/vs_lenght;
                 Vector2 tangent = Vector2(-normal.y, normal.x);
 
                 float p_nor_dp = dot(normal, body1->points[p].velo);
@@ -374,9 +392,17 @@ void solve_bodys() {
                 float p_nor_m = (p_nor_dp * (b1mass - b2mass) + 2.0f * b2mass * s_nor_dp) / (b1mass + b2mass); //point
                 float s_nor_m = (s_nor_dp * (b2mass - b1mass) + 2.0f * b1mass * p_nor_dp) / (b1mass + b2mass); //stick
 
-                body1->points[p].velo = normal * p_nor_m * body_body_normal_bouncienes + tangent * p_tan_dp * body_body_tangent_bouncienes;
-                closest_stick.point_A->velo = normal * s_nor_m * body_body_normal_bouncienes + tangent * s_tan_dp * body_body_tangent_bouncienes;
-                closest_stick.point_B->velo = normal * s_nor_m * body_body_normal_bouncienes + tangent * s_tan_dp * body_body_tangent_bouncienes;
+                Vector2 new_point_velo = normal * p_nor_m * body_body_normal_bouncienes + tangent * p_tan_dp * body_body_tangent_bouncienes;
+                Vector2 new_stick_velo = normal * s_nor_m * body_body_normal_bouncienes + tangent * s_tan_dp * body_body_tangent_bouncienes;
+
+                
+                //pis(to_string(bodys[0].points[0].velo.x) + " c " + to_string(bodys[1].points[0].velo.x));
+
+                body1->points[p].velo = new_point_velo;
+                closest_stick.point_A->velo = new_stick_velo;
+                closest_stick.point_B->velo = new_stick_velo;
+
+                //pis(to_string(bodys[0].points[0].velo.x) + " d " + to_string(bodys[1].points[0].velo.x));
             }
         }
     }

@@ -199,7 +199,7 @@ struct Body {
 	}
 
 	BB get_bb(){
-		float margin = 100.0;
+		float margin = 10.0;
 
 		float min_y = 999999999;
 		float max_y = -999999999;

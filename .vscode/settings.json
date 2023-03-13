@@ -3,6 +3,7 @@
     "files.associations": {
         "thread": "cpp",
         "chrono": "cpp",
-        "exception": "cpp"
+        "exception": "cpp",
+        "condition_variable": "cpp"
     }
 }
