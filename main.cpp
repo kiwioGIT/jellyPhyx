@@ -155,14 +155,17 @@ int main()
 
 
     load_bodys();
-    using namespace std::chrono_literals;
-    std::thread t{ main_loop };
-    std::this_thread::sleep_for(1000000s);
-    {
-        std::lock_guard<std::mutex> lk(mut);
-        stop = true;
-    }
-    t.join();
+    main_loop();
+
+    // Threaded implementations
+    //using namespace std::chrono_literals;
+    //std::thread t{ main_loop };
+    //std::this_thread::sleep_for(1000000s);
+    //{
+    //    std::lock_guard<std::mutex> lk(mut);
+    //    stop = true;
+    //}
+    //t.join();
     return 0;
 }
 
