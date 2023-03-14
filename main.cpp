@@ -156,6 +156,10 @@ int main()
 
     load_bodys();
     main_loop();
+
+    //
+    // Threaded implementation of loop
+    //
     //using namespace std::chrono_literals;
     //std::thread t{ main_loop };
     //std::this_thread::sleep_for(1000000s);
