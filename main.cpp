@@ -11,11 +11,7 @@
 
 using namespace std;
 
-float pi = 3.14159265359;
 
-float ball_size = 10;
-
-float speed_scale = 0.1;
 
 vector<Body> bodys;
 
@@ -25,42 +21,36 @@ static std::condition_variable cv;
 static std::mutex mut;
 static bool stop = false;
 
+float pi = 3.14159265359;
+float ball_size = 10;
+float speed_scale = 0.1;
+
+int screen_width = 800;
+int screen_height = 600;
+float fract_f = 0.1;
+float point_simulated_radius = 0.05;
+int solve_iterations = 5;
+float normal_bounce_eff = -1;
+float tangent_bounce_eff = 0.9;
+float body_body_normal_bouncienes = 1.0;
+float body_body_tangent_bouncienes = 1.0;
+int draw_springs_and_points = -1;
+
 void draw_points(sf::RenderWindow* window);
 void draw_springs(sf::RenderWindow* window);
 void draw_sticks(sf::RenderWindow* window);
 void update_points();
-void solve_ball_collisions();
+void solve_wall_collision();
 void solve_springs();
 void solve_stick_collisions();
 float distance_to_nearest_stick(Vector2 v, Body body);
 void draw_circle(Vector2 pos, float radius, sf::Color, sf::RenderWindow* window);
 bool is_point_in_body(Vector2 pos, Body body);
 void solve_bodys();
-int screen_width = 800;
-int screen_height = 600;
-
-
-float fract_f = 0.1;
-
-float point_simulated_radius = 0.5;
-
-int solve_iterations = 5;
-float normal_bounce_eff = -1;
-float tangent_bounce_eff = 0.9;
-float body_body_normal_bouncienes = 1.0;
-float body_body_tangent_bouncienes = 1.0;
-
-
-Vector2 test_point(100,100);
-
-int draw_springs_and_points = -1;
-
-
 
 void pis(string s) {
     std::cout << s << std::endl;
 }
-
 
 void load_bodys(){
     bodys.clear();
@@ -73,7 +63,6 @@ void load_bodys(){
     bodys[2].load_body_file("body3.phx", 1, 1, 1, Vector2(400, 0));
 }
 
-
 void main_loop() {
     sf::RenderWindow window(sf::VideoMode(screen_width, screen_height), "Phx Window");
     using delta = std::chrono::duration<std::int64_t, std::ratio<1,600>>;
@@ -82,8 +71,6 @@ void main_loop() {
     while (!stop)
     {
         mut.unlock();
-
-
         sf::Event event;
         while (window.pollEvent(event))
         {
@@ -118,26 +105,24 @@ void main_loop() {
             bodys[0].apply_velocity(Vector2(0,-speed));
         }
 
-
+        // Physics sequence
         if (!sf::Keyboard::isKeyPressed(sf::Keyboard::Space))
         {
-            //pis(to_string(bodys[0].points[0].velo.x) + " a " + to_string(bodys[1].points[0].velo.x));
             update_points();
-            //pis(to_string(bodys[0].points[0].velo.x) + " b " + to_string(bodys[1].points[0].velo.x));
             solve_springs();
-            //pis(to_string(bodys[0].points[0].velo.x) + " c " + to_string(bodys[1].points[0].velo.x));
-            solve_ball_collisions();
-            //pis(to_string(bodys[0].points[0].velo.x) + " d " + to_string(bodys[1].points[0].velo.x));
+            solve_wall_collision();
             solve_bodys();
-            //pis(to_string(bodys[0].points[0].velo.x) + " e " + to_string(bodys[1].points[0].velo.x));
         }
         
+        // Draw sfml sequence
         window.clear();
         draw_sticks(&window);
+
         if (draw_springs_and_points == 1) {
             draw_springs(&window);
             draw_points(&window);
         }
+
         window.display();
 
         // Wait for the next 1/60 sec
@@ -151,9 +136,7 @@ void main_loop() {
 
 
 int main()
-{//lol
-
-
+{
     load_bodys();
     main_loop();
 
@@ -208,11 +191,9 @@ void draw_springs(sf::RenderWindow* window) {
 void draw_sticks(sf::RenderWindow* window) {
     float thickness = 2;
     for (int b = 0; b < bodys.size(); b++) {
-        
         for (int s = 0; s < bodys[b].outline_sticks.size(); s++) {
             sf::CircleShape circle_shape(3.0);
             Vector2 normal = (bodys[b].outline_sticks[s].point_A->pos - bodys[b].outline_sticks[s].point_B->pos).normalized().get_tangent();
-
             sf::Vertex line[] =
             {
                 sf::Vertex(sf::Vector2f(bodys[b].outline_sticks[s].point_A->pos.x + normal.x * thickness, bodys[b].outline_sticks[s].point_A->pos.y + normal.y * thickness)),
@@ -220,10 +201,8 @@ void draw_sticks(sf::RenderWindow* window) {
                 sf::Vertex(sf::Vector2f(bodys[b].outline_sticks[s].point_B->pos.x + normal.x * thickness, bodys[b].outline_sticks[s].point_B->pos.y + normal.y * thickness)),
                 sf::Vertex(sf::Vector2f(bodys[b].outline_sticks[s].point_B->pos.x - normal.x * thickness, bodys[b].outline_sticks[s].point_B->pos.y - normal.y * thickness))
             };
-            
             window->draw(line, 4, sf::TrianglesStrip);  
         }
-        
     }
 }
 
@@ -235,8 +214,6 @@ void update_points() {
         }
     }
 }
-
-
 
 int get_line_intersection(Vector2 p0, Vector2 p1,Vector2 p2, Vector2 p3/*, float* i_x, float* i_y*/)
 {
@@ -251,13 +228,14 @@ int get_line_intersection(Vector2 p0, Vector2 p1,Vector2 p2, Vector2 p3/*, float
     if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
     {
         // Collision detected
-        //if (i_x != NULL)
-       //     *i_x = p0_x + (t * s1_x);
-       // if (i_y != NULL)
-       //     *i_y = p0_y + (t * s1_y);
-        return 1;
-    }
+        // Point of collision not important in this case
 
+        //if (i_x != NULL)
+        //    *i_x = p0_x + (t * s1_x);
+        //if (i_y != NULL)
+        //    *i_y = p0_y + (t * s1_y);
+        return 1; 
+    }
     return 0; // No collision
 }
 
@@ -265,7 +243,7 @@ int get_line_intersection(Vector2 p0, Vector2 p1,Vector2 p2, Vector2 p3/*, float
 bool is_point_in_body(Vector2 pos,Body body){
     BB bb = body.get_bb();
     if (!bb.includes_v(pos)) { return false; }
-    Vector2 point_out = Vector2(bb.maxi.x + 1.0, pos.y); //Possible optimization becouse of horizontal line
+    Vector2 point_out = Vector2(bb.maxi.x + 1.0, pos.y); // Note: Possible optimization using a horizontal line
     std::vector<OutlineStick> intersected_sticks;
     for (int s = 0; s < body.outline_sticks.size(); s++) {
         int intersect = get_line_intersection(pos, point_out, body.outline_sticks[s].point_A->pos, body.outline_sticks[s].point_B->pos);
@@ -277,12 +255,11 @@ bool is_point_in_body(Vector2 pos,Body body){
         return true;
     }
     return false;
-
 }
 
 
 float distance_to_nearest_stick(Vector2 v, Body body) {
-    float min_dist = 99999999999;
+    float min_dist = INFINITY;
     OutlineStick closest_stick;
     Vector2 projection = Vector2(0, 0);
     for (int s = 0; s < body.outline_sticks.size(); s++) {
@@ -292,60 +269,26 @@ float distance_to_nearest_stick(Vector2 v, Body body) {
             min_dist = dist;
             closest_stick = body.outline_sticks[s];
         }
-        
     }
     return min_dist;
 }
 
 
-
+// Main collision solving function
 void solve_bodys() {
     for (int b1 = 0; b1 < bodys.size(); b1++) {
         Body *body1 = &bodys[b1];
         for (int b2 = 0; b2 < bodys.size(); b2++) {
             if (b1 == b2) { continue; }
             Body* body2 = &bodys[b2];
-            if (!body1->get_bb().is_overlap(body2->get_bb())) { continue; }
+            if (!body1->get_bb().is_overlap(body2->get_bb())) { continue; } // If ounding boxes dont overlap skip
             
             for (int p = 0; p < body1->points.size(); p++) {
-                for (int p2 = 0; p2 < body2->points.size(); p2++) {
-                    Vector2 dist_v = body2->points[p2].pos - body1->points[p].pos;
-                    float dist_between = dist_v.length();
-                    if (dist_between < 2 * point_simulated_radius) {
-                        Vector2 shift_vector = dist_v * 0.5 * (( 2 * point_simulated_radius - dist_between) / dist_between);
-                        body1->points[p].pos = body1->points[p].pos - shift_vector;
-                        body2->points[p2].pos = body2->points[p2].pos + shift_vector;
-
-                        Vector2 n = dist_v.normalized();
-                        Vector2 tan = Vector2(-n.y,n.x);
-
-                        float ndp1 = dot(n, body1->points[p].velo);
-                        float ndp2 = dot(n, body2->points[p2].velo);
-
-                        float tdp1 = dot(tan, body1->points[p].velo);
-                        float tdp2 = dot(tan, body2->points[p2].velo);
-
-                        float mass1 = 1.0;
-                        float mass2 = 1.0;
-
-                        float nor_m1 = (ndp1 * (mass1 - mass2) + 2.0f * mass2 * ndp2) / (mass1 + mass2);
-                        float nor_m2 = (ndp2 * (mass2 - mass1) + 2.0f * mass1 * ndp1) / (mass1 + mass2);
-
-                        body1->points[p].velo = n * nor_m1 * body_body_normal_bouncienes + tan * tdp1 * body_body_tangent_bouncienes;
-                        body2->points[p2].velo = n * nor_m2 * body_body_normal_bouncienes + tan * tdp2 * body_body_tangent_bouncienes;
-                    }
-                }
-
-                //pis(to_string(bodys[0].points[0].velo.x) + " a " + to_string(bodys[1].points[0].velo.x));
-
-                if (!is_point_in_body(body1->points[p].pos, *body2)) {
-                    //pis("skipped");
-                    continue;
-                }
                 
-                    
+                if (!is_point_in_body(body1->points[p].pos, *body2)) {continue;} // If point is outside outer body skip
+                 
                 // Gets data for stick-point solve
-                float min_dist = 99999999999;
+                float min_dist = INFINITY;
                 OutlineStick closest_stick = body2->outline_sticks[0];
                 Vector2 closest_projection = Vector2(0, 0);
                 for (int s = 0; s < body2->outline_sticks.size(); s++) {
@@ -357,8 +300,7 @@ void solve_bodys() {
                         closest_projection = projection;
                     }
                 }
-                //pis(to_string(bodys[0].points[0].velo.x) + " b " + to_string(bodys[1].points[0].velo.x));
-
+                
                 // Updates positions
                 float stick_lenght = distance(closest_stick.point_A->pos,closest_stick.point_B->pos);
                 float to_point_lenght = distance(closest_stick.point_A->pos, closest_projection);
@@ -366,7 +308,7 @@ void solve_bodys() {
 
                 Vector2 vs = closest_projection - body1->points[p].pos;
 
-                if (abs(t) < 0.001 || abs(t) > 0.999){continue;}
+                if (abs(t) < 0.0001 || abs(t) > 0.9999){continue;} // t value causes bugs if too small so its better to skip entirely
 
                 float vsa = (t - 1) / (2 - 2 * t + 2 * t * t);
                 float vsb = vsa * (t / (1 - t));
@@ -379,7 +321,7 @@ void solve_bodys() {
                 
                 float vs_lenght = vs.length();
 
-                if (vs_lenght < 0.0001){continue;}
+                if (vs_lenght < 0.0001){continue;} // Fixes a near zero division bug
 
                 Vector2 normal = vs/vs_lenght;
                 Vector2 tangent = Vector2(-normal.y, normal.x);
@@ -390,43 +332,25 @@ void solve_bodys() {
                 float p_tan_dp = dot(tangent, body1->points[p].velo);
                 float s_tan_dp = dot(tangent, stick_avarage_velo);
 
+                float b1mass = 1.0; 
+                float b2mass = 2.0; // Stick weight is set to be double the point weight for now
 
-                float b1mass = 1.0;
-                float b2mass = 2.0;
-
-                float p_nor_m = (p_nor_dp * (b1mass - b2mass) + 2.0f * b2mass * s_nor_dp) / (b1mass + b2mass); //point
-                float s_nor_m = (s_nor_dp * (b2mass - b1mass) + 2.0f * b1mass * p_nor_dp) / (b1mass + b2mass); //stick
+                float p_nor_m = (p_nor_dp * (b1mass - b2mass) + 2.0f * b2mass * s_nor_dp) / (b1mass + b2mass); //point normal motion
+                float s_nor_m = (s_nor_dp * (b2mass - b1mass) + 2.0f * b1mass * p_nor_dp) / (b1mass + b2mass); //stick normal motion
 
                 Vector2 new_point_velo = normal * p_nor_m * body_body_normal_bouncienes + tangent * p_tan_dp * body_body_tangent_bouncienes;
                 Vector2 new_stick_velo = normal * s_nor_m * body_body_normal_bouncienes + tangent * s_tan_dp * body_body_tangent_bouncienes;
 
-                
-                //pis(to_string(bodys[0].points[0].velo.x) + " c " + to_string(bodys[1].points[0].velo.x));
-
                 body1->points[p].velo = new_point_velo;
                 closest_stick.point_A->velo = new_stick_velo;
                 closest_stick.point_B->velo = new_stick_velo;
-
-                //pis(to_string(bodys[0].points[0].velo.x) + " d " + to_string(bodys[1].points[0].velo.x));
             }
         }
     }
 }
 
 
-void solve_stick_collisions() {
-    for (int b = 0; b < bodys.size(); b++) {
-        for (int s = 0; s < bodys[b].springs.size(); s++) {
-            Spring spring = bodys[b].springs[s];
-            Vector2 dist_v = spring.point_B->pos - spring.point_A->pos;
-            float dist_f = dist_v.length();
-            Vector2 shift_vector = dist_v * 0.5 * ((spring.lenght - dist_f) / dist_f);
-            spring.point_A->pos = spring.point_A->pos - shift_vector;
-            spring.point_B->pos = spring.point_B->pos + shift_vector;
-        }
-    }
-}
-
+// Solves spring weighted displacement
 void solve_springs() {
     for (int b = 0; b < bodys.size(); b++) {
         for (int s = 0; s < bodys[b].springs.size(); s++) {
@@ -442,32 +366,25 @@ void solve_springs() {
     }
 }
 
-
-
-
-
-void solve_ball_collisions() {
+// Collision between points and screen boundary, will be ommited from the final build
+void solve_wall_collision() {
     for (int b = 0; b < bodys.size(); b++) {
         for (int i = 0; i < bodys[b].points.size(); i++) {
             if (bodys[b].points[i].pos.y + bodys[b].points.size() > screen_height) {
                 bodys[b].points[i].pos.y = screen_height -bodys[b].points.size() - fract_f;
                 bodys[b].points[i].velo.y *= normal_bounce_eff;
                 bodys[b].points[i].velo.x *= tangent_bounce_eff;
-
             }
-
             if (bodys[b].points[i].pos.y - bodys[b].points.size() < 0) {
                 bodys[b].points[i].pos.y = 0 +bodys[b].points.size() + fract_f;
                 bodys[b].points[i].velo.y *= normal_bounce_eff;
                 bodys[b].points[i].velo.x *= tangent_bounce_eff;
             }
-
             if (bodys[b].points[i].pos.x + bodys[b].points.size() > screen_width) {
                 bodys[b].points[i].pos.x = screen_width -bodys[b].points.size() - fract_f;
                 bodys[b].points[i].velo.x *= normal_bounce_eff;
                 bodys[b].points[i].velo.y *= tangent_bounce_eff;
             }
-
             if (bodys[b].points[i].pos.x - bodys[b].points.size() < 0) {
                 bodys[b].points[i].pos.x = 0 + bodys[b].points.size() + fract_f;
                 bodys[b].points[i].velo.x *= normal_bounce_eff;
