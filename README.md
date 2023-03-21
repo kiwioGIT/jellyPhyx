@@ -1,7 +1,8 @@
 # physXsim
 soft body physics sim
 
-# compilation
+## compilation
+
 You must have g++ and this lib: (sudo apt-get install libsfml-dev) installed
 
  
