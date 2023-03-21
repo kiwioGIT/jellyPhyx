@@ -132,11 +132,29 @@ void main_loop() {
     }
 }
 
-
+bool load_cfg(std::string file){
+	std::ifstream f(file);
+	if (!f.is_open()) {return false;}
+	while (!f.eof()){
+		char line[128];
+		f.getline(line, 128);
+		std::strstream str;
+		str << line;
+		char j;
+		if (line[0] == '#') {}
+		if (line[0] == 'w') {
+            str >> j >> screen_width >> screen_height;
+		}
+		if (line[0] == 't') {
+            str >> j >> speed_scale;
+		}
+	}
+}
 
 
 int main()
 {
+    load_cfg("setup.cfg");
     load_bodys();
     main_loop();
 
@@ -367,7 +385,7 @@ void solve_springs() {
     }
 }
 
-// Collision between points and screen boundary, will be ommited from the final build
+// Collision between points and screen boundary, looks ugly, will be ommited from the final build , 
 void solve_wall_collision() {
     for (int b = 0; b < bodys.size(); b++) {
         for (int i = 0; i < bodys[b].points.size(); i++) {
