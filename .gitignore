@@ -2,3 +2,4 @@
 /src/lib/*
 *.dll
 *.o
+*.exe
