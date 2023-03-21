@@ -3,7 +3,7 @@ soft body physics sim
 
 # compilation
 Requirements:
-   g++ compiler
+   g++ compiler, 
    smfl lib (sudo apt-get install libsfml-dev)
  
 Build with make
