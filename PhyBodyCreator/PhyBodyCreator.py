@@ -1,7 +1,5 @@
-# import the pygame module, so you can use it
 import pygame
 import math
-# define a main function
 
 points = []
 springs = []
@@ -9,11 +7,8 @@ springs = []
 default_stifness = 0.3
 default_damping = 0.1
 
-
-
 def distance(x1,y1,x2,y2):
     return math.sqrt((x1 - x2)*(x1 - x2) + (y1 - y2)*(y1 - y2))
-
 
 def closest_point(x,y):
     min_dist = 999999
@@ -36,8 +31,6 @@ def save():
     for os in range(len(points) - 1):
         f.write("o " + str(os) + " " + str(os + 1) + "\n")
     f.write("o " + str(len(points) - 1) + " " + str(0))
-
-
 
 def main():
     pygame.init()
@@ -76,9 +69,6 @@ def main():
             pygame.draw.circle(screen, (255,0,0,128), (p[0], p[1]), 5, 5)
         pygame.display.update()
     pygame.quit()
-
-
-
 
 if __name__=="__main__":
     main()
