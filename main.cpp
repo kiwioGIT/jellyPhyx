@@ -2,16 +2,15 @@
 #include <SFML/Graphics.hpp>
 #include <string>
 #include <vector>
-#include "PhyLib.h"
 #include <chrono>
 #include <condition_variable>
 #include <mutex>
 #include <cstdint>
 #include <thread>
 
+#include "PhyLib.h"
+
 using namespace std;
-
-
 
 vector<Body> bodys;
 
@@ -47,24 +46,14 @@ float distance_to_nearest_stick(Vector2 v, Body body);
 void draw_circle(Vector2 pos, float radius, sf::Color, sf::RenderWindow* window);
 bool is_point_in_body(Vector2 pos, Body body);
 void solve_bodys();
-
+bool load_cfg(std::string file);
 void pis(string s) {
     std::cout << s << std::endl;
 }
 
-void load_bodys(){
-    bodys.clear();
-    Body body;
-    bodys.push_back(body);
-    bodys.push_back(body);
-    bodys.push_back(body);
-    bodys[0].load_body_file("body1.phx", 1, 1, 1, Vector2(0, 0));
-    bodys[1].load_body_file("body2.phx", 1, 1, 1, Vector2(200, 0));
-    bodys[2].load_body_file("body3.phx", 1, 1, 1, Vector2(400, 0));
-}
 
 void main_loop() {
-    sf::RenderWindow window(sf::VideoMode(screen_width, screen_height), "Phx Window");
+    sf::RenderWindow window(sf::VideoMode(screen_width, screen_height), "jellyPhx");
     using delta = std::chrono::duration<std::int64_t, std::ratio<1,600>>;
     auto next = std::chrono::steady_clock::now() + delta{ 1 };
     std::unique_lock<std::mutex> lk(mut);
@@ -85,7 +74,7 @@ void main_loop() {
                     draw_springs_and_points *= -1;
                 }
                 if (event.key.code == sf::Keyboard::R) {
-                    load_bodys();
+                    load_cfg("setup.cfg");
                 }
             }
 
@@ -133,29 +122,44 @@ void main_loop() {
 }
 
 bool load_cfg(std::string file){
+    bodys.clear();
 	std::ifstream f(file);
 	if (!f.is_open()) {return false;}
 	while (!f.eof()){
+        string b_to_load = "";
+        float b_to_load_x;
+        float b_to_load_y;
 		char line[128];
 		f.getline(line, 128);
 		std::strstream str;
 		str << line;
 		char j;
 		if (line[0] == '#') {}
+        if (line[0] == 'g'){
+            str >> j >> gravity.x >> gravity.y;
+        }
 		if (line[0] == 'w') {
             str >> j >> screen_width >> screen_height;
 		}
 		if (line[0] == 't') {
             str >> j >> speed_scale;
 		}
+        if (line[0] == 'l'){
+            str >> j >> b_to_load >> b_to_load_x >> b_to_load_y;
+        }
+        if (b_to_load != ""){
+            Body new_body;
+            bodys.push_back(new_body);
+            bodys[bodys.size() - 1].load_body_file(b_to_load,1,1,1,Vector2(b_to_load_x,b_to_load_y));
+        }
 	}
 }
 
 
 int main()
 {
+
     load_cfg("setup.cfg");
-    load_bodys();
     main_loop();
 
     //
@@ -178,7 +182,6 @@ void draw_circle(Vector2 pos, float radius,sf::Color color,sf::RenderWindow* win
     circle_shape.setFillColor(color);
     window->draw(circle_shape);
 }
-
 
 void draw_points(sf::RenderWindow* window) {
     for (int body_i = 0; body_i < bodys.size(); body_i++) {
@@ -233,65 +236,6 @@ void update_points() {
     }
 }
 
-int get_line_intersection(Vector2 p0, Vector2 p1,Vector2 p2, Vector2 p3/*, float* i_x, float* i_y*/)
-{
-    float s1_x, s1_y, s2_x, s2_y;
-    s1_x = p1.x - p0.x;     s1_y = p1.y - p0.y;
-    s2_x = p3.x - p2.x;     s2_y = p3.y - p2.y;
-
-    float s, t;
-    s = (-s1_y * (p0.x - p2.x) + s1_x * (p0.y - p2.y)) / (-s2_x * s1_y + s1_x * s2_y);
-    t = (s2_x * (p0.y - p2.y) - s2_y * (p0.x - p2.x)) / (-s2_x * s1_y + s1_x * s2_y);
-
-    if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
-    {
-        // Collision detected
-        // Point of collision not important in this case
-
-        //if (i_x != NULL)
-        //    *i_x = p0_x + (t * s1_x);
-        //if (i_y != NULL)
-        //    *i_y = p0_y + (t * s1_y);
-        return 1; 
-    }
-    return 0; // No collision
-}
-
-
-bool is_point_in_body(Vector2 pos,Body body){
-    BB bb = body.get_bb();
-    if (!bb.includes_v(pos)) { return false; }
-    Vector2 point_out = Vector2(bb.maxi.x + 1.0, pos.y); // Note: Possible optimization using a horizontal line
-    std::vector<OutlineStick> intersected_sticks;
-    for (int s = 0; s < body.outline_sticks.size(); s++) {
-        int intersect = get_line_intersection(pos, point_out, body.outline_sticks[s].point_A->pos, body.outline_sticks[s].point_B->pos);
-        if (intersect == 1) {
-            intersected_sticks.push_back(body.outline_sticks[s]);
-        }
-    }
-    if (intersected_sticks.size() % 2 != 0) {
-        return true;
-    }
-    return false;
-}
-
-
-float distance_to_nearest_stick(Vector2 v, Body body) {
-    float min_dist = INFINITY;
-    OutlineStick closest_stick;
-    Vector2 projection = Vector2(0, 0);
-    for (int s = 0; s < body.outline_sticks.size(); s++) {
-        Vector2 projection = project_to_line_seg(body.outline_sticks[s].point_A->pos, body.outline_sticks[s].point_B->pos, v);
-        float dist = distance(projection, v);
-        if (dist < min_dist) {
-            min_dist = dist;
-            closest_stick = body.outline_sticks[s];
-        }
-    }
-    return min_dist;
-}
-
-
 // Main collision solving function
 void solve_bodys() {
     for (int b1 = 0; b1 < bodys.size(); b1++) {
@@ -299,7 +243,7 @@ void solve_bodys() {
         for (int b2 = 0; b2 < bodys.size(); b2++) {
             if (b1 == b2) { continue; }
             Body* body2 = &bodys[b2];
-            if (!body1->get_bb().is_overlap(body2->get_bb())) { continue; } // If ounding boxes dont overlap skip
+            if (!body1->get_bb().is_overlap(body2->get_bb())) { continue; } // If bounding boxes dont overlap skip
             
             for (int p = 0; p < body1->points.size(); p++) {
                 
@@ -368,7 +312,7 @@ void solve_bodys() {
 }
 
 
-// Solves spring weighted displacement
+// Solves all spring weighted displacement
 void solve_springs() {
     for (int b = 0; b < bodys.size(); b++) {
         for (int s = 0; s < bodys[b].springs.size(); s++) {
@@ -384,7 +328,7 @@ void solve_springs() {
     }
 }
 
-// Collision between points and screen boundary, looks ugly, will be ommited from the final build , 
+// Collision between points and screen boundary, looks ugly, probably will be ommited from the final build , 
 void solve_wall_collision() {
     for (int b = 0; b < bodys.size(); b++) {
         for (int i = 0; i < bodys[b].points.size(); i++) {

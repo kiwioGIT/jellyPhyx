@@ -111,6 +111,32 @@ float distance(Vector2 v1, Vector2 v2) {
 	return sqrt((v1.x - v2.x)*(v1.x - v2.x) + (v1.y - v2.y) * (v1.y - v2.y));
 }
 
+int get_line_intersection(Vector2 p0, Vector2 p1,Vector2 p2, Vector2 p3/*, float* i_x, float* i_y*/)
+{
+    float s1_x, s1_y, s2_x, s2_y;
+    s1_x = p1.x - p0.x;     s1_y = p1.y - p0.y;
+    s2_x = p3.x - p2.x;     s2_y = p3.y - p2.y;
+
+    float s, t;
+    s = (-s1_y * (p0.x - p2.x) + s1_x * (p0.y - p2.y)) / (-s2_x * s1_y + s1_x * s2_y);
+    t = (s2_x * (p0.y - p2.y) - s2_y * (p0.x - p2.x)) / (-s2_x * s1_y + s1_x * s2_y);
+
+    if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
+    {
+        // Collision detected
+        // Point of collision not important in this case
+
+        //if (i_x != NULL)
+        //    *i_x = p0_x + (t * s1_x);
+        //if (i_y != NULL)
+        //    *i_y = p0_y + (t * s1_y);
+        return 1; 
+    }
+    return 0; // No collision
+}
+
+
+
 float min_dist_to_line_seg(Vector2 v, Vector2 w, Vector2 p) {
 	// MAGIC
 	const float l2 = (w - v).length_squared();
@@ -312,3 +338,35 @@ struct Body {
 	
 
 };
+
+float distance_to_nearest_stick(Vector2 v, Body body) {
+    float min_dist = INFINITY;
+    OutlineStick closest_stick;
+    Vector2 projection = Vector2(0, 0);
+    for (int s = 0; s < body.outline_sticks.size(); s++) {
+        Vector2 projection = project_to_line_seg(body.outline_sticks[s].point_A->pos, body.outline_sticks[s].point_B->pos, v);
+        float dist = distance(projection, v);
+        if (dist < min_dist) {
+            min_dist = dist;
+            closest_stick = body.outline_sticks[s];
+        }
+    }
+    return min_dist;
+}
+
+bool is_point_in_body(Vector2 pos,Body body){
+    BB bb = body.get_bb();
+    if (!bb.includes_v(pos)) { return false; }
+    Vector2 point_out = Vector2(bb.maxi.x + 1.0, pos.y); // Note: Possible optimization using a horizontal line
+    std::vector<OutlineStick> intersected_sticks;
+    for (int s = 0; s < body.outline_sticks.size(); s++) {
+        int intersect = get_line_intersection(pos, point_out, body.outline_sticks[s].point_A->pos, body.outline_sticks[s].point_B->pos);
+        if (intersect == 1) {
+            intersected_sticks.push_back(body.outline_sticks[s]);
+        }
+    }
+    if (intersected_sticks.size() % 2 != 0) {
+        return true;
+    }
+    return false;
+}
