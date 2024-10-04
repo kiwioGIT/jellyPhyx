@@ -47,10 +47,10 @@ void draw_circle(Vector2 pos, float radius, sf::Color, sf::RenderWindow* window)
 bool is_point_in_body(Vector2 pos, Body body);
 void solve_bodys();
 bool load_cfg(std::string file);
+
 void pis(string s) {
     std::cout << s << std::endl;
 }
-
 
 void main_loop() {
     sf::RenderWindow window(sf::VideoMode(screen_width, screen_height), "jellyPhx");
@@ -310,7 +310,6 @@ void solve_bodys() {
         }
     }
 }
-
 
 // Solves all spring weighted displacement
 void solve_springs() {
