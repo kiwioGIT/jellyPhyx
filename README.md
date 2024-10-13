@@ -1,7 +1,7 @@
 # JellyPhx
 soft body physics simulation based on point-masses and springs
 
-# Use
+# How To Use
 setup.cfg commands:                                                                                                
  w [resolution x] [resolution y]        # sets window size;                                                           
  g [gravity x] [gravity y]              # sets gravity;                                                              
