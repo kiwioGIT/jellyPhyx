@@ -1,5 +1,5 @@
 # JellyPhx
-soft body physics sim based on point-masses and springs
+soft body physics simulation based on point-masses and springs
 
 # Use
 setup.cfg commands:                                                                                                
