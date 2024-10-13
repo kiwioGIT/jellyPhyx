@@ -13,4 +13,5 @@ or
 g++ -Isrc/include -c main.cpp
 g++ main.o -o main -Lsrc/lib -lsfml-graphics -lsfml-window -lsfml-system
 
-https://github.com/kiwioGIT/jellyPhyx/blob/phx-windows/showcase/image.png
+![alt text](https://github.com/kiwioGIT/jellyPhyx/blob/phx-windows/showcase/image.png?raw=true)
+
